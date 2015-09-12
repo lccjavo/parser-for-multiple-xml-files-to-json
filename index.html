@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<script src="https://code.jquery.com/jquery-1.10.2.js"></script>		
+	<script src="xml2json.min.js"></script>	
+	<script>
+	var xmlObjects=[];
+
+	$(document).ready(function() {
+		var fileChooser = document.getElementById('fileXML');
+
+		function parseTextAsXml(text) {	    	   
+		    var x2js = new X2JS();
+		    var json=x2js.xml_str2json(text);	    
+		    xmlObjects.push(json);	    
+		    console.log(xmlObjects);
+		}
+
+		function waitForTextReadComplete(reader) {
+		    reader.onloadend = function(event) {
+		        var text = event.target.result;
+		        parseTextAsXml(text);
+		    }
+		}
+
+		function handleFileSelection() {
+			var count=fileChooser.files.length;
+			for(var i=0; i<count;i++)
+			{
+			    var file = fileChooser.files[i],
+			    reader = new FileReader();
+			    waitForTextReadComplete(reader);
+			    reader.readAsText(file);
+		    }
+		}
+		fileChooser.addEventListener('change', handleFileSelection, false);
+	});
+
+	</script>
+
+
+<title>Parsing Multiple XML Files to json</title>
+</head>
+
+<body>
+<input type="file" id="fileXML" multiple>
+</body>
+
+</html>
