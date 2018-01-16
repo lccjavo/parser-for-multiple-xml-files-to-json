@@ -20,8 +20,9 @@ var jsonObjects=[];
 
 	function parserToTable(jsonObjects){
 		for(var i=0; i<jsonObjects.length; i++){
-			if(insertedKeys.indexOf(jsonObjects[i].Comprobante._sello) == -1){
-				//console.log("nuevo row", insertedKeys.indexOf(jsonObjects[i].Comprobante._certificado));
+			if((insertedKeys.indexOf(jsonObjects[i].Comprobante._sello) == -1) || (insertedKeys.indexOf(jsonObjects[i].Comprobante._Sello) == -1)){
+				console.log("nuevo row", insertedKeys.indexOf(jsonObjects[i].Comprobante));
+				
 				var row = parserRowAsInvoiceMX(jsonObjects[i].Comprobante);
 				insertRow(row);
 				if(i == jsonObjects.length-1){
@@ -48,31 +49,97 @@ var jsonObjects=[];
 
 	function parserRowAsInvoiceMX(comprobante){
 		insertedKeys.push(comprobante._certificado);
-		//console.log(insertedKeys, comprobante._certificado);
-		var row="<tr>"+
+		
+		if(comprobante._version){ var version = comprobante._version; };
+		if(comprobante._Version){ var version = comprobante._Version; };
+
+		console.log(version, comprobante);		
+
+	   if(comprobante._version <= "3.2"){
+	   		var fecha = comprobante._fecha;
+	   }
+	   if(comprobante._Version == "3.3"){
+	   		var fecha = comprobante._Fecha;
+	   }
+
+	   if(comprobante._version <= "3.2"){
+	   		var rfc = comprobante.Emisor._rfc;
+	   }
+	   if(comprobante._Version == "3.3"){
+	   		var rfc = comprobante.Emisor._Rfc;
+	   }
+
+	   if(comprobante._version <= "3.2"){
+	   		var nombre = comprobante.Emisor._nombre;
+	   }
+	   if(comprobante._Version == "3.3"){
+	   		var nombre = comprobante.Emisor._Nombre;
+	   }
+
+
+	   if(comprobante._version <= "3.2"){
+	   		var conceptos = createConceptos(comprobante.Conceptos.Concepto, 3.2);
+	   }
+	   if(comprobante._Version == "3.3"){
+	   		var conceptos = createConceptos(comprobante.Conceptos.Concepto, 3.3);
+	   }
+
+
+	   if(comprobante._version <= "3.2"){
+	   		var subtotal = setSubtotal(comprobante._subTotal);
+	   	}
+	   	if(comprobante._Version == "3.3"){
+	   		var subtotal = setSubtotal(comprobante._SubTotal);
+	   	}
+
+	   if(comprobante._version <= "3.2"){
+	   		if(comprobante.Impuestos){
+	   			var iva = setSubtotalIva(comprobante.Impuestos._totalImpuestosTrasladados);
+	   		}
+	   		else{
+	   			var iva = 0;
+	   		}
+	   	}
+	   	if(comprobante._Version == "3.3"){
+	   		if(comprobante.Impuestos){
+	   			var iva = setSubtotalIva(comprobante.Impuestos._TotalImpuestosTrasladados);
+	   		}
+	   		else{
+	   			var iva = 0;
+	   		}
+	   	}
+
+
+		if(comprobante._version <= "3.2"){
+	   		var total = setGranTotal(comprobante._total);
+	   	}
+	   	if(comprobante._Version == "3.3"){
+	   		var total = setGranTotal(comprobante._Total);
+	   	}
+
+	   	var row="<tr>"+
 					"<td>"+
-					   comprobante._fecha+
+					   fecha+
 					"</td>"+
 					"<td>"+
-					   comprobante.Emisor._rfc+
+					   rfc+
 					"</td>"+
 					"<td>"+
-					   comprobante.Emisor._nombre+
+					   nombre+
 					"</td>"+
 					"<td>"+
-					   createConceptos(comprobante.Conceptos.Concepto)+
+					   conceptos+
 					"</td>"+
 					"<td>"+
-					   setSubtotal(comprobante._subTotal)+
+						subtotal+
 					"</td>"+
 					"<td>"+
-					   setSubtotalIva(comprobante.Impuestos._totalImpuestosTrasladados)+
+						iva+					   
 					"</td>"+
 					"<td>"+
-					   setGranTotal(comprobante._total)+
+						total+					   
 					"</td>"+
 				"</tr>";
-
 		return row;
 	}
 
@@ -93,20 +160,38 @@ var jsonObjects=[];
 		return total;
 	}
 
-	function createConceptos(concepto){
+	function createConceptos(concepto, version){
 		var conceptosAgrupados = "";
 		if(concepto.length>1){
 			for(i=0; i<concepto.length; i++){
 				if(i==0){
-					conceptosAgrupados=concepto[i]._descripcion;
+					if(version <=3.2){
+						conceptosAgrupados=concepto[i]._descripcion;
+					}
+					if(version == 3.3){
+						conceptosAgrupados=concepto[i]._Descripcion;
+					}
 				}
 				else{
-					conceptosAgrupados=conceptosAgrupados+"<br>"+concepto[i]._descripcion
+					if(version <=3.2){
+						conceptosAgrupados=conceptosAgrupados+"<br>"+concepto[i]._descripcion
+					}
+					if(version == 3.3){
+					    conceptosAgrupados=conceptosAgrupados+"<br>"+concepto[i]._Descripcion
+					}
+					
 				}
 			}
 		}
 		else{
-			conceptosAgrupados = concepto._descripcion;
+			if(version <=3.2){
+				conceptosAgrupados = concepto._descripcion;
+			}
+			if(version == 3.3){
+			    conceptosAgrupados = concepto._Descripcion;
+			}
+			
+			
 		}
 
 		return conceptosAgrupados;			
