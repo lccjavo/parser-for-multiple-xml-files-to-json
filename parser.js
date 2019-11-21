@@ -1,18 +1,83 @@
-var jsonObjects=[];
+	var jsonObjects=[];
 	var granSubTotal = 0;
 	var granSubTotalIva = 0;
 	var granTotal = 0;
 	var insertedKeys = [];
+	var fileNames=[];
 
 	function generateTable(){
-		    //console.log(jsonObjects);
-		    cleanEverityng();
-		    parserToTable(jsonObjects);	
+		    parserToTable(jsonObjects);  
+		    addTableSorter();
+		    shiftView(); 
+	}
+
+	function generateTableBtn(){
+		    parserToTable(jsonObjects);  
+		    setTimeout(function(){ addTableSorter(); }, 1000);
+	}
+
+	function shiftView(){
+		$("#fileXML").css("display", "none");
+		$("#empezar").css("display", "block");
+		$("#bajar").css("display", "block");
+		$("#loading").css("display", "none");
+	}
+
+	function showLoading(){
+		$("#loading").css("display", "block");
+	}
+
+	function exportTableToExcel(tableID){
+	    var downloadLink;
+	    var dataType = 'application/vnd.ms-excel';
+	    var tableSelect = document.getElementById(tableID);
+	    var tableHTML = tableSelect.outerHTML.replace(/ /g, '%20');
+	    
+	    // Specify file name
+	    var name = moment().format("L");
+	    filename = name+'.xls';
+	    
+	    // Create download link element
+	    downloadLink = document.createElement("a");
+	    
+	    document.body.appendChild(downloadLink);
+	    
+	    if(navigator.msSaveOrOpenBlob){
+	        var blob = new Blob(['\ufeff', tableHTML], {
+	            type: dataType
+	        });
+	        navigator.msSaveOrOpenBlob( blob, filename);
+	    }else{
+	        // Create a link to the file
+	        downloadLink.href = 'data:' + dataType + ', ' + tableHTML;
+	    
+	        // Setting the file name
+	        downloadLink.download = filename;
+	        
+	        //triggering the function
+	        downloadLink.click();
+	    }
+	}
+
+	function addTableSorter(){
+		$(function(){
+			$('table').tablesorter({
+				widgets        : ['zebra', 'columns'],
+				usNumberFormat : false,
+				sortReset      : true,
+				sortRestart    : true,
+				sortList: [[0,0],[1,0]]
+			});
+			$('table').css("display", "block");
+		});
 	}
 
 	function cleanEverityng(){
 		$("#totals").html("");
-		//$("#tableData tbody").html("");
+		$("#tableData tbody").html("");
+		jsonObjects=[];
+		fileNames=[];
+		insertedKeys = [];
 		granSubTotal = 0;
 		granSubTotalIva = 0;
 		granTotal = 0;
@@ -21,9 +86,9 @@ var jsonObjects=[];
 	function parserToTable(jsonObjects){
 		for(var i=0; i<jsonObjects.length; i++){
 			if((insertedKeys.indexOf(jsonObjects[i].Comprobante._sello) == -1) || (insertedKeys.indexOf(jsonObjects[i].Comprobante._Sello) == -1)){
-				console.log("nuevo row", insertedKeys.indexOf(jsonObjects[i].Comprobante));
+				//console.log("nuevo row", insertedKeys.indexOf(jsonObjects[i].Comprobante));
 				
-				var row = parserRowAsInvoiceMX(jsonObjects[i].Comprobante);
+				var row = parserRowAsInvoiceMX(jsonObjects[i].Comprobante, fileNames[i], i+1);
 				insertRow(row);
 				if(i == jsonObjects.length-1){
 					insertTotals();
@@ -47,13 +112,13 @@ var jsonObjects=[];
 		$("#tableData tbody").append(row);
 	}
 
-	function parserRowAsInvoiceMX(comprobante){
+	function parserRowAsInvoiceMX(comprobante, fileName, i){
 		insertedKeys.push(comprobante._certificado);
 		
 		if(comprobante._version){ var version = comprobante._version; };
 		if(comprobante._Version){ var version = comprobante._Version; };
 
-		console.log(version, comprobante);		
+		//console.log(version, comprobante);		
 
 	   if(comprobante._version <= "3.2"){
 	   		var fecha = comprobante._fecha;
@@ -117,9 +182,20 @@ var jsonObjects=[];
 	   		var total = setGranTotal(comprobante._Total);
 	   	}
 
+	   	var tipo = comprobante._TipoDeComprobante;
+
 	   	var row="<tr>"+
+	   				"<td>"+
+					   i+
+					"</td>"+
+	   				"<td>"+
+					   fileName+
+					"</td>"+
+	   				"<td>"+
+					   tipo+
+					"</td>"+
 					"<td>"+
-					   fecha+
+					   moment(fecha).format('LL')+
 					"</td>"+
 					"<td>"+
 					   rfc+
@@ -205,9 +281,6 @@ var jsonObjects=[];
 		    var json=x2js.xml_str2json(text);	    
 		    jsonObjects.push(json);	
 		}
-
-		
-
 		
 
 		function waitForTextReadComplete(reader) {
@@ -218,6 +291,8 @@ var jsonObjects=[];
 		}
 
 		function handleFileSelection() {
+			cleanEverityng();
+			showLoading();
 			var count=fileChooser.files.length;
 			for(var i=0; i<count;i++)
 			{
@@ -225,10 +300,10 @@ var jsonObjects=[];
 			    reader = new FileReader();
 			    waitForTextReadComplete(reader);
 			    reader.readAsText(file);
-			    if(i == count-1){
-			    	generateTable();
-			    }
+			    fileNames.push(file.name);
 		    }
+			setTimeout(function(){ generateTable(); }, 1000);
+
 		}
 		fileChooser.addEventListener('change', handleFileSelection, false);
 	});

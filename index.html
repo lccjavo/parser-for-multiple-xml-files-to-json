@@ -4,18 +4,40 @@
 	<script src="https://code.jquery.com/jquery-1.10.2.js"></script>		
 	<script src="xml2json.min.js"></script>	
 	<script src="parser.js"></script>
+	<link href="tablesorter/css/theme.default.css" rel="stylesheet">
+	<script src="tablesorter/js/jquery.tablesorter.min.js"></script>
+	<script src="tablesorter/js/jquery.tablesorter.widgets.min.js"></script>
+	<script src="moment-with-locales.js"></script>
+	<script>
+		moment.locale('es-us');
+	</script>
+	<style>
+		.loading{
+			margin: auto;
+			width: 50%;
+		}
+	</style>
 
 <title>Parsing Multiple XML Files to json</title>
 </head>
 
 <body>
 <input type="file" id="fileXML" multiple>
+<input type="button" id="empezar" value="Empezar" onClick="javascript: location.reload()" style="display: none">
 <br>
-<input type="button" value="generate table" onClick="javascript: generateTable()">
-
-<table id="tableData">
+<input type="button" id="bajar" value="Bajar Excel" onClick="javascript: exportTableToExcel('tableData')" style="display: none">
+<table id="tableData" class="tablesorter" style="display: none">
 <thead>
 	<tr>
+		<td>
+			Id
+		</td>
+		<td>
+			Archivo
+		</td>
+		<td>
+			Tipo
+		</td>
 		<td>
 			Fecha
 		</td>
@@ -43,9 +65,14 @@
 	
 </tbody>
 </table>
+<div style="display: none" id="loading" class="loading">
+	<h2>Generando tabla....</h2>
+	<img src="loading.gif">
+</div>
 
 <div id="totals">
 </div>
+
 </body>
 
 </html>
