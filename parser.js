@@ -102,9 +102,7 @@
 	}
 
 	function insertTotals(){
-		var totals="<h3>subtotal: "+granSubTotal+"</h3>"+
-		           "<h3>iva: "+granSubTotalIva+"</h3>"+
-		           "<h2>total: "+granTotal+"</h3>";
+		const totals = `<h3>subtotal: ${granSubTotal}</h3><h3>iva: ${granSubTotalIva}</h3><h2>total: ${granTotal}</h3>`;
 		$("#totals").append(totals)
 	}
 
@@ -114,109 +112,42 @@
 
 	function parserRowAsInvoiceMX(comprobante, fileName, i){
 		insertedKeys.push(comprobante._certificado);
-		
-		if(comprobante._version){ var version = comprobante._version; };
-		if(comprobante._Version){ var version = comprobante._Version; };
 
-		//console.log(version, comprobante);		
+		const version = comprobante._version || comprobante._Version
 
-	   if(comprobante._version <= "3.2"){
-	   		var fecha = comprobante._fecha;
-	   }
-	   if(comprobante._Version == "3.3"){
-	   		var fecha = comprobante._Fecha;
-	   }
+		let fecha = null;
+		let rfc = null;
+		let nombre = null;
+		let conceptos = null;
+		let subtotal = null;
+		let iva = 0;
+		let total = null;
+		let tipo = null;
 
-	   if(comprobante._version <= "3.2"){
-	   		var rfc = comprobante.Emisor._rfc;
-	   }
-	   if(comprobante._Version == "3.3"){
-	   		var rfc = comprobante.Emisor._Rfc;
-	   }
+		if (version <= "3.2") {
+			rfc = comprobante.Emisor._rfc;
+			nombre = comprobante.Emisor._nombre;
+			conceptos = createConceptos(comprobante.Conceptos.Concepto, 3.2);
+			subtotal = setSubtotal(comprobante._subTotal);
+			total = setGranTotal(comprobante._total);
+			tipo = comprobante._TipoDeComprobante;
+			fecha = moment(comprobante._fecha).format('LL');
+			iva = (comprobante.Impuestos) ? setSubtotalIva(comprobante.Impuestos._totalImpuestosTrasladados) : 0;
+		} else if (version == "3.3") {
+			rfc = comprobante.Emisor._Rfc;
+			nombre = comprobante.Emisor._Nombre;
+			conceptos = createConceptos(comprobante.Conceptos.Concepto, 3.3);
+			subtotal = setSubtotal(comprobante._SubTotal);
+			total = setGranTotal(comprobante._Total);
+			fecha = moment(comprobante._Fecha).format('LL');
+			iva = (comprobante.Impuestos) ? setSubtotalIva(comprobante.Impuestos._TotalImpuestosTrasladados) : 0;
+		}
+			
+		return `<tr>${createTableDivision(i,fileName,tipo,fecha,rfc,nombre,conceptos,subtotal,iva,total)}</tr>`;
+	}
 
-	   if(comprobante._version <= "3.2"){
-	   		var nombre = comprobante.Emisor._nombre;
-	   }
-	   if(comprobante._Version == "3.3"){
-	   		var nombre = comprobante.Emisor._Nombre;
-	   }
-
-
-	   if(comprobante._version <= "3.2"){
-	   		var conceptos = createConceptos(comprobante.Conceptos.Concepto, 3.2);
-	   }
-	   if(comprobante._Version == "3.3"){
-	   		var conceptos = createConceptos(comprobante.Conceptos.Concepto, 3.3);
-	   }
-
-
-	   if(comprobante._version <= "3.2"){
-	   		var subtotal = setSubtotal(comprobante._subTotal);
-	   	}
-	   	if(comprobante._Version == "3.3"){
-	   		var subtotal = setSubtotal(comprobante._SubTotal);
-	   	}
-
-	   if(comprobante._version <= "3.2"){
-	   		if(comprobante.Impuestos){
-	   			var iva = setSubtotalIva(comprobante.Impuestos._totalImpuestosTrasladados);
-	   		}
-	   		else{
-	   			var iva = 0;
-	   		}
-	   	}
-	   	if(comprobante._Version == "3.3"){
-	   		if(comprobante.Impuestos){
-	   			var iva = setSubtotalIva(comprobante.Impuestos._TotalImpuestosTrasladados);
-	   		}
-	   		else{
-	   			var iva = 0;
-	   		}
-	   	}
-
-
-		if(comprobante._version <= "3.2"){
-	   		var total = setGranTotal(comprobante._total);
-	   	}
-	   	if(comprobante._Version == "3.3"){
-	   		var total = setGranTotal(comprobante._Total);
-	   	}
-
-	   	var tipo = comprobante._TipoDeComprobante;
-
-	   	var row="<tr>"+
-	   				"<td>"+
-					   i+
-					"</td>"+
-	   				"<td>"+
-					   fileName+
-					"</td>"+
-	   				"<td>"+
-					   tipo+
-					"</td>"+
-					"<td>"+
-					   moment(fecha).format('LL')+
-					"</td>"+
-					"<td>"+
-					   rfc+
-					"</td>"+
-					"<td>"+
-					   nombre+
-					"</td>"+
-					"<td>"+
-					   conceptos+
-					"</td>"+
-					"<td>"+
-						subtotal+
-					"</td>"+
-					"<td>"+
-						iva+					   
-					"</td>"+
-					"<td>"+
-						total+					   
-					"</td>"+
-				"</tr>";
-		return row;
+	function createTableDivision(...args) {
+		return args.reduce((accumulator, currentValue) => accumulator + `<td>${currentValue}</td>`, '')
 	}
 
 	function setSubtotal(subtotal){
