@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<script src="main.js"></script>
+	<link href="../tablesorter/css/theme.default.css" rel="stylesheet">
+	<script src="../tablesorter/js/jquery.tablesorter.min.js"></script>
+	<script src="../tablesorter/js/jquery.tablesorter.widgets.min.js"></script>
+	<style>
+		.loading{
+			margin: auto;
+			width: 50%;
+		}
+	</style>
+
+<title>Parsing Multiple XML Files to json</title>
+</head>
+
+<body>
+<input type="file" id="fileXML" multiple>
+<input type="button" id="empezar" value="Empezar" onClick="javascript: location.reload()" style="display: none">
+<br>
+<input type="button" id="bajar" value="Bajar Excel" onClick="javascript: exportTableToExcel('tableData')" style="display: none">
+<table id="tableData" class="tablesorter" style="display: none">
+<thead>
+	<tr>
+		<td>
+			Id
+		</td>
+		<td>
+			Archivo
+		</td>
+		<td>
+			Tipo
+		</td>
+		<td>
+			Fecha
+		</td>
+		<td>
+			RFC
+		</td>
+		<td>
+			Nombre
+		</td>
+		<td>
+			Conceptos
+		</td>
+		<td>
+			Subtotal
+		</td>
+		<td>
+			IVA
+		</td>
+		<td>
+			Total
+		</td>
+	</tr>
+</thead>
+<tbody>
+	
+</tbody>
+</table>
+<div style="display: none" id="loading" class="loading">
+	<h2>Generando tabla....</h2>
+	<img src=<%=require("../images/loading.gif")%> />
+</div>
+
+<div id="totals">
+</div>
+
+</body>
+
+</html>
