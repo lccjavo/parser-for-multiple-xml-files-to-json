@@ -122,7 +122,7 @@
 		let subtotal = null;
 		let iva = 0;
 		let total = null;
-		let tipo = null;
+		let tipo = "";
 
 		if (version <= "3.2") {
 			rfc = comprobante.Emisor._rfc;
@@ -137,6 +137,7 @@
 			rfc = comprobante.Emisor._Rfc;
 			nombre = comprobante.Emisor._Nombre;
 			conceptos = createConceptos(comprobante.Conceptos.Concepto, 3.3);
+			tipo = comprobante._TipoDeComprobante;
 			subtotal = setSubtotal(comprobante._SubTotal);
 			total = setGranTotal(comprobante._Total);
 			fecha = moment(comprobante._Fecha).format('LL');
