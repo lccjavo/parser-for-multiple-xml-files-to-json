@@ -10,12 +10,11 @@ var fileNames       = [];
 
 // -------------------- Init & File Picker --------------------
 $(document).ready(function() {
-  var fileChooser = document.getElementById('fileXML');
-  fileChooser.addEventListener('change', handleFileSelection, false);
+  $('#fileXML').on('change', handleFileSelection);
 });
 
 function handleFileSelection() {
-  cleanEverityng();
+  cleanEverything();
   showLoading();
 
   var files       = Array.from(document.getElementById('fileXML').files);
@@ -46,31 +45,29 @@ function handleFileSelection() {
 
 // -------------------- XML → JSON --------------------
 function parseTextAsXml(text) {
-  // 1) try jQuery plugin
   var rawJson = null;
-  try {
-    // NOTE: only works if your xml2json.min.js truly defines this:
-    rawJson = $.xml2json
-      ? $.xml2json( $.parseXML(text) )
-      : null;
-  } catch(e){ rawJson = null; }
 
-  // 2) fallback to X2JS if available
+  // 1) intenta jQuery xml2json
+  try {
+    if ($.xml2json) {
+      rawJson = $.xml2json($.parseXML(text));
+    }
+  } catch(e) {
+    rawJson = null;
+  }
+
+  // 2) fallback a X2JS si está disponible
   if (!rawJson && typeof X2JS === 'function') {
     var x2js = new X2JS();
-    // use the xml-string-to-json method
     if (typeof x2js.xml_str2json === 'function') {
       rawJson = x2js.xml_str2json(text);
-    }
-    else if (typeof x2js.xml2json === 'function') {
-      // some versions offer xml2json(xmlDoc)
-      var xmlDoc = $.parseXML(text);
-      rawJson = x2js.xml2json(xmlDoc);
+    } else if (typeof x2js.xml2json === 'function') {
+      rawJson = x2js.xml2json($.parseXML(text));
     }
   }
 
   if (!rawJson) {
-    console.error("No se pudo convertir XML→JSON. Revisa tu xml2json.min.js");
+    console.error("No se pudo convertir XML→JSON. Revisa tu xml2json/X2JS.");
     return;
   }
 
@@ -97,22 +94,22 @@ function parserToTable(jsonObjects) {
     if (!c) return;
 
     // Evita duplicados por sello/certificado
-    var key = c._certificado || c._Certificado ||
-              c._sello      || c._Sello;
+    var key = c._certificado || c._Certificado || c._sello || c._Sello;
     if (insertedKeys.indexOf(key) === -1) {
       var row = parserRowAsInvoiceMX(c, fileNames[idx], idx + 1);
       insertRow(row);
-      if (idx === jsonObjects.length - 1) insertTotals();
+      insertedKeys.push(key);
     }
   });
+  insertTotals();
 }
 
 function insertRow(row) {
-  $("#tableData tbody").append(row);
+  $('#tableData tbody').append(row);
 }
 
 function insertTotals() {
-  $("#totals").append(
+  $('#totals').append(
     `<h3>Subtotal: ${granSubTotal.toFixed(2)}</h3>
      <h3>IVA: ${granSubTotalIva.toFixed(2)}</h3>
      <h2>Total: ${granTotal.toFixed(2)}</h2>`
@@ -127,35 +124,31 @@ function addTableSorter() {
     sortReset      : true,
     sortRestart    : true,
     sortList       : [[0,0],[1,0]]
-  }).css("display","block");
+  });
+  $('table').css("display", "block");
 }
 
 function shiftView() {
-  $("#fileXML").hide();
-  $("#empezar,#bajar").show();
-  $("#loading").hide();
+  $('#fileXML').hide();
+  $('#empezar,#bajar').show();
+  $('#loading').hide();
 }
 
 function showLoading() {
-  $("#loading").show();
+  $('#loading').show();
 }
 
-function cleanEverityng() {
-  $("#totals").empty();
-  $("#tableData tbody").empty();
-  jsonObjects = [];
-  fileNames   = [];
-  insertedKeys= [];
-  granSubTotal = granSubTotalIva = granTotal = 0;
+function cleanEverything() {
+  $('#totals').empty();
+  $('#tableData tbody').empty();
+  jsonObjects     = [];
+  fileNames       = [];
+  insertedKeys    = [];
+  granSubTotal    = granSubTotalIva = granTotal = 0;
 }
 
 // -------------------- Row Parser (3.2, 3.3, 4.0+) --------------------
-function parserRowAsInvoiceMX(comprobante, fileName, i){
-  insertedKeys.push(
-    comprobante._certificado || comprobante._Certificado ||
-    comprobante._sello      || comprobante._Sello
-  );
-
+function parserRowAsInvoiceMX(comprobante, fileName, i) {
   var version = comprobante._version || comprobante._Version;
   var fecha, rfc, nombre, conceptos, subtotal, iva = 0, total, tipo;
 
@@ -186,7 +179,7 @@ function parserRowAsInvoiceMX(comprobante, fileName, i){
                 : 0;
   }
   else {
-    // CFDI v4.0+ (se trata igual que 3.3)
+    // CFDI v4.0+ (igual que 3.3)
     rfc       = comprobante.Emisor._Rfc;
     nombre    = comprobante.Emisor._Nombre;
     conceptos = createConceptos(comprobante.Conceptos.Concepto, 4.0);
@@ -213,25 +206,50 @@ function createTableDivision() {
     .join('');
 }
 
-function setSubtotal(val){
+function setSubtotal(val) {
   granSubTotal += parseFloat(val) || 0;
   return val;
 }
 
-function setSubtotalIva(val){
+function setSubtotalIva(val) {
   granSubTotalIva += parseFloat(val) || 0;
   return val;
 }
 
-function setGranTotal(val){
+function setGranTotal(val) {
   granTotal += parseFloat(val) || 0;
   return val;
 }
 
-function createConceptos(concepto, version){
+function createConceptos(concepto, version) {
   var key = version <= 3.2 ? '_descripcion' : '_Descripcion';
   if (Array.isArray(concepto)) {
     return concepto.map(c => c[key]).join('<br>');
   }
   return concepto[key];
+}
+
+// -------------------- Export a Excel (.xls) --------------------
+function exportTableToExcel(tableID){
+  var downloadLink;
+  var dataType = 'application/vnd.ms-excel';
+  var tableSelect = document.getElementById(tableID);
+  var tableHTML = tableSelect.outerHTML.replace(/ /g, '%20');
+  
+  // Nombre con fecha actual
+  var name = moment().format("L");
+  var filename = name + '.xls';
+  
+  // Crear enlace de descarga
+  downloadLink = document.createElement("a");
+  document.body.appendChild(downloadLink);
+  
+  if (navigator.msSaveOrOpenBlob) {
+    var blob = new Blob(['\ufeff', tableHTML], { type: dataType });
+    navigator.msSaveOrOpenBlob(blob, filename);
+  } else {
+    downloadLink.href = 'data:' + dataType + ', ' + tableHTML;
+    downloadLink.download = filename;
+    downloadLink.click();
+  }
 }
